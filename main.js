@@ -79,8 +79,9 @@ if (!container) {
     }
 
     let lText = "";
+    // Debounce Timer to avoid excessive API calls during caption updates.
     let debounceTimer = null;
-    const debounceTime = 200; //ms
+    const debounceTime = 400; //ms
 
     const doTranslate = async (text) => {
         if (!text || text === lText) return;

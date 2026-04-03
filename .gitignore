@@ -1,0 +1,16 @@
+*.iml
+
+/.idea
+/build
+/out
+/.gradle
+/.vscode
+/.DS_Store
+/logs
+/target
+/.mvn
+/.settings
+/.classpath
+/.project
+/.factorypath
+/.externalToolBuilders

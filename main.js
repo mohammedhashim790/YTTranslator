@@ -56,8 +56,10 @@ const makeDraggable = (block) => {
 }
 
 const targetElemId = "caption-window-2"
-if (!sourceElem) {
-    console.error("Source caption window not found!");
+const container = document.querySelector('.ytp-caption-window-container');
+
+if (!container) {
+    console.error("Caption container not found!");
 } else {
     // Create a copy of the node
     const sl = "ar";
@@ -65,19 +67,28 @@ if (!sourceElem) {
 
     let targetElement = document.getElementById(targetElemId);
     if (targetElement === undefined || targetElement === null) {
-        targetElement = sourceElem.cloneNode(true);
-        targetElement.id = targetElemId;
-        targetElement.style.top = "10%";
+        // We use the initial sourceElem if it exists, otherwise we wait for observer
+        const initialSource = document.getElementById("caption-window-1");
+        if (initialSource) {
+            targetElement = initialSource.cloneNode(true);
+            targetElement.id = targetElemId;
+            targetElement.style.top = "10%";
+            makeDraggable(targetElement);
+            container.insertBefore(targetElement, container.firstChild);
+        }
     }
-    makeDraggable(targetElement)
-    sourceElem.parentNode.insertBefore(targetElement, sourceElem);
 
     let lText = "";
     let debounceTimer = null;
-    const debounceTime = 400; //ms
+    const debounceTime = 200; //ms
 
     const doTranslate = async (text) => {
         if (!text || text === lText) return;
+
+        if (!document.getElementById(targetElemId) && targetElement) {
+            container.insertBefore(targetElement, container.firstChild);
+        }
+
         lText = text;
 
         const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&q=${encodeURIComponent(text)}`;
@@ -87,7 +98,7 @@ if (!sourceElem) {
             const data = await res.json();
             // Google returns translations in data[0] as an array of segments
             const translated = data[0].map(s => s[0]).join("");
-            targetElement.innerText = translated;
+            if (targetElement) targetElement.innerText = translated;
             // console.log("Translated:", translated);
         } catch (e) {
             console.error("Translation Error:", e);
@@ -95,7 +106,18 @@ if (!sourceElem) {
     };
 
     const observer = new MutationObserver(() => {
-        const currentText = sourceElem.innerText.trim();
+        const activeSource = document.getElementById("caption-window-1");
+        if (!activeSource) return;
+
+        // If target was deleted by YT UI refresh, recreate it
+        if (!document.getElementById(targetElemId)) {
+            targetElement = activeSource.cloneNode(true);
+            targetElement.id = targetElemId;
+            makeDraggable(targetElement);
+            container.insertBefore(targetElement, container.firstChild);
+        }
+
+        const currentText = activeSource.innerText.trim();
 
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => {
@@ -103,7 +125,7 @@ if (!sourceElem) {
         }, debounceTime);
     });
 
-    observer.observe(sourceElem, {
+    observer.observe(container, {
         childList: true, characterData: true, subtree: true
     });
 }

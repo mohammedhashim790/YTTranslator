@@ -1,5 +1,3 @@
-const sourceElem = document.getElementById("caption-window-1");
-
 
 const makeDraggable = (block) => {
 
@@ -55,28 +53,31 @@ const makeDraggable = (block) => {
     return block;
 }
 
+const sourceElemId = "caption-window-1"
 const targetElemId = "caption-window-2"
+const playerNodeId = ".ytp-caption-window-container"
 const container = document.querySelector('.ytp-caption-window-container');
+const playerNode = document.querySelector('.html5-video-player');
 
-if (!container) {
-    console.error("Caption container not found!");
+if (!playerNode) {
+    console.error("Player node not found!");
 } else {
     // Create a copy of the node
     const sl = "ar";
     const tl = "en"
 
-    let targetElement = document.getElementById(targetElemId);
-    if (targetElement === undefined || targetElement === null) {
-        // We use the initial sourceElem if it exists, otherwise we wait for observer
-        const initialSource = document.getElementById("caption-window-1");
-        if (initialSource) {
-            targetElement = initialSource.cloneNode(true);
-            targetElement.id = targetElemId;
-            targetElement.style.top = "10%";
-            makeDraggable(targetElement);
-            container.insertBefore(targetElement, container.firstChild);
-        }
-    }
+    let targetElement = null;
+    // if (targetElement === undefined || targetElement === null) {
+    //     // We use the initial sourceElem if it exists, otherwise we wait for observer
+    //     const initialSource = document.getElementById("caption-window-1");
+    //     if (initialSource) {
+    //         targetElement = initialSource.cloneNode(true);
+    //         targetElement.id = targetElemId;
+    //         targetElement.style.top = "10%";
+    //         makeDraggable(targetElement);
+    //         container.insertBefore(targetElement, container.firstChild);
+    //     }
+    // }
 
     let lText = "";
     // Debounce Timer to avoid excessive API calls during caption updates.
@@ -107,22 +108,35 @@ if (!container) {
     };
 
     const observer = new MutationObserver(() => {
-        const activeSource = document.getElementById("caption-window-1");
-        if (!activeSource) return;
+        const currentContainer = document.querySelector(playerNodeId);
+        const activeSource = document.getElementById(sourceElemId);
 
         // If target was deleted by YT UI refresh, recreate it
-        if (!document.getElementById(targetElemId)) {
+        // if (!document.getElementById(targetElemId)) {
+        //     targetElement = activeSource.cloneNode(true);
+        //     targetElement.id = targetElemId;
+        //     makeDraggable(targetElement);
+        //     container.insertBefore(targetElement, container.firstChild);
+        // }
+
+        if (!currentContainer || !activeSource) return;
+
+        targetElement = document.getElementById(targetElemId);
+        if (!targetElement) {
             targetElement = activeSource.cloneNode(true);
             targetElement.id = targetElemId;
+            targetElement.innerText = "...";
             makeDraggable(targetElement);
-            container.insertBefore(targetElement, container.firstChild);
+            currentContainer.insertBefore(targetElement, currentContainer.firstChild);
+        } else if (targetElement.parentNode !== currentContainer) {
+            currentContainer.insertBefore(targetElement, currentContainer.firstChild);
         }
 
         const currentText = activeSource.innerText.trim();
 
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => {
-            doTranslate(currentText);
+            doTranslate(currentText, targetElement);
         }, debounceTime);
     });
 
